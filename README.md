@@ -1,4 +1,4 @@
-### Tiny word generator
+# Tiny word generator
 
 This is a little project I made to learn rust.
 
