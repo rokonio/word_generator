@@ -90,7 +90,12 @@ impl ProbabilityTable {
 
     /// Construct a new `ProbabilityTable` from reader. It can be any type that
     /// implements [`BufRead`].
+    ///
+    /// # Panic
+    ///
+    /// Panic if `accuracy` is less than one.
     pub fn from_reader(reader: impl BufRead, accuracy: usize) -> io::Result<ProbabilityTable> {
+        assert!(accuracy >= 1);
         Ok(generate_table(add_space(reader, accuracy)?, accuracy))
     }
 
