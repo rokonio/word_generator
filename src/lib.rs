@@ -2,30 +2,47 @@
 // This crate is under the MIT liscence <LISCENCE or
 // https://opensource.org/licenses/MIT>
 
-//! Utilities for generating random words based on a language
-//!
-//! Word_generator provides utilities for generating words based on a language.
-//! It create a ProbabilityTable (see
-//! [Markov Chains](https://en.wikipedia.org/wiki/Markov_chain#Examples)) by
-//! analyzing a language that can then generate words that souds like this
+//! Utilities for generating random words that souds similar to a choosen
 //! language.
+//!
+//! Word_generator provides utilities for generating words that souds similar
+//! to a choosen language.
+//! It uses
+//! [Markov Chains](https://en.wikipedia.org/wiki/Markov_chain#Examples) under
+//! the name of `ProbabilityTable` to analyze the likehood of each characters
+//! to appears after the nths previous where n is variable. n can be consider
+//! as the accuracy
+//!
+//! This idea came from a
+//![Science Étonnante's video (in french)](https://youtu.be/YsR7r2378j0)
 //!
 //! # Example
 //!
 //! ```
 //! # fn main() -> std::io::Result<()> {
 //! use std::{fs::File, io::BufReader};
-//! use word_generator::*;
+//! use word_generator::{langs, *};
 //!
-//! let reader = BufReader::new(File::open("Fr.txt")?);
+//! let reader = BufReader::new(File::open("Your_lang.txt")?); // using your language
+//! let reader2 = BufReader::new(langs::fr_txt()); // or a preexisting language
+//!
+//! // This
 //! let table = ProbabilityTable::from_reader(reader, 3)?;
-//!
 //! println!("{:?}", table.generate_words(15)); // Generate 15 word
+//!
 //! // Is the same as this
-//! // println!("{:?}", generate_words(reader, 3, 15));
+//! println!("{:?}", generate_words(reader2, 3, 15)?);
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! # Licences
+//!
+//! Here is the list of licences of the languages on this crate:
+//!  - French: free of use
+//!
+//! If you have more language to add please submit a PR at
+//! [the GitHub of this project](https://github.com/rokonio/word_generator)
 use std::{
     collections::HashMap,
     io::{self, prelude::*},
@@ -34,22 +51,23 @@ use std::{
 use rand::distributions::WeightedIndex;
 use rand::prelude::*;
 
-/// This type represents represents the probability table of each caracters for
-/// a language to appears after a given string of a certain length.
-///
-/// It is used as a generator to create words that souds like the language that
-/// was analyzed.
+pub mod langs;
+/// This is a
+/// [Markov Chains](https://en.wikipedia.org/wiki/Markov_chain#Examples) under
+/// the name of `ProbabilityTable`. It represents the likehood of each
+/// characters of the language to appears after the nths previous where n is
+/// variable. n can be consider as the accuracy
 ///
 /// # Example
 ///
 /// ```
 /// # fn main() -> std::io::Result<()> {
-/// use std::{fs::File, io::BufReader};
-/// use word_generator::*;
+/// use std::io::BufReader;
+/// use word_generator::{langs, *};
 ///
-/// let reader = BufReader::new(File::open("Fr.txt")?);
+/// let reader = BufReader::new(langs::fr_txt());
+///
 /// let table = ProbabilityTable::from_reader(reader, 3)?;
-///
 /// println!("{:?}", table.generate_words(15)); // Generate 15 word
 /// # Ok(())
 /// # }
@@ -57,24 +75,21 @@ use rand::prelude::*;
 #[derive(Debug)]
 pub struct ProbabilityTable {
     table: HashMap<String, HashMap<char, u32>>,
-    input_length: usize,
+    accuracy: usize,
 }
 
 impl ProbabilityTable {
-    fn new(input_length: usize) -> ProbabilityTable {
+    fn new(accuracy: usize) -> ProbabilityTable {
         ProbabilityTable {
             table: HashMap::new(),
-            input_length,
+            accuracy,
         }
     }
 
     /// Construct a new `ProbabilityTable` from reader. It can be any type that
     /// implements [`BufRead`].
-    pub fn from_reader(reader: impl BufRead, input_length: usize) -> io::Result<ProbabilityTable> {
-        Ok(generate_table(
-            add_space(reader, input_length)?,
-            input_length,
-        ))
+    pub fn from_reader(reader: impl BufRead, accuracy: usize) -> io::Result<ProbabilityTable> {
+        Ok(generate_table(add_space(reader, accuracy)?, accuracy))
     }
 
     /// Generate `amount` words.
@@ -83,12 +98,12 @@ impl ProbabilityTable {
     ///
     /// ```
     /// # fn main() -> std::io::Result<()> {
-    /// use std::{fs::File, io::BufReader};
-    /// use word_generator::*;
+    /// use std::io::BufReader;
+    /// use word_generator::{langs, *};
     ///
-    /// let reader = BufReader::new(File::open("Fr.txt")?);
+    /// let reader = BufReader::new(langs::fr_txt());
+    ///
     /// let table = ProbabilityTable::from_reader(reader, 3)?;
-    ///
     /// println!("{:?}", table.generate_words(15)); // Generate 15 word
     /// # Ok(())
     /// # }
@@ -99,27 +114,27 @@ impl ProbabilityTable {
 }
 
 // Replace each new line characters by a series of space of length
-fn add_space(reader: impl BufRead, length: usize) -> io::Result<String> {
+fn add_space(reader: impl BufRead, accuracy: usize) -> io::Result<String> {
     reader
         .lines()
         .map(|line| -> io::Result<String> {
-            Ok(format!("{}{}", " ".repeat(length), line?.to_lowercase()))
+            Ok(format!("{}{}", " ".repeat(accuracy), line?.to_lowercase()))
         })
         .collect::<io::Result<String>>()
 }
 
 // Generate a ProbabilityTable from the output of add_space
-fn generate_table(spaced_file: String, input_length: usize) -> ProbabilityTable {
-    let mut table = ProbabilityTable::new(input_length);
+fn generate_table(spaced_file: String, accuracy: usize) -> ProbabilityTable {
+    let mut table = ProbabilityTable::new(accuracy);
     let chars_list: Vec<_> = spaced_file.chars().collect();
-    for charactere in 0..chars_list.len() - input_length {
+    for charactere in 0..chars_list.len() - accuracy {
         let key: String = chars_list
-            .get(charactere..charactere + input_length)
+            .get(charactere..charactere + accuracy)
             .unwrap()
             .iter()
             .collect();
 
-        let value: char = *chars_list.get(charactere + input_length).unwrap();
+        let value: char = *chars_list.get(charactere + accuracy).unwrap();
 
         *table
             .table
@@ -133,10 +148,10 @@ fn generate_table(spaced_file: String, input_length: usize) -> ProbabilityTable 
 
 // Generate one word from a ProbabilityTable
 fn generate_word(table: &ProbabilityTable, rng: &mut ThreadRng) -> String {
-    let mut out = " ".repeat(table.input_length);
+    let mut out = " ".repeat(table.accuracy);
     loop {
         let chars_list: Vec<_> = out.chars().collect();
-        let key = &chars_list[chars_list.len() - table.input_length..]
+        let key = &chars_list[chars_list.len() - table.accuracy..]
             .iter()
             .collect::<String>();
         let choices = table.table.get(key).unwrap();
@@ -159,13 +174,22 @@ fn generate_multiple_words(matrix: &ProbabilityTable, number: u32) -> Vec<String
     vec_string
 }
 
-/// Genrate words that souds like those from a language by analyzing it
-/// (from a reader containing each word on a different line), with the
-/// precision of `input_length` (how many letters are take in consideration when
-/// generating the next letter) and the number of word to generate
-
 /// Generate `amount` word with choosable `accuracy` by analyzing a language
 /// under the form of a type that implement [`BufRead`]
+///
+/// # Example
+///
+/// ```
+/// # fn main() -> std::io::Result<()> {
+/// use std::io::BufReader;
+/// use word_generator::{langs, *};
+///
+/// let reader = BufReader::new(langs::fr_txt());
+///
+/// println!("{:?}", generate_words(reader, 3, 15)?);
+/// # Ok(())
+/// # }
+/// ```
 pub fn generate_words(
     reader: impl BufRead,
     accuracy: usize,
