@@ -10,7 +10,7 @@
 //! It uses
 //! [Markov Chains](https://en.wikipedia.org/wiki/Markov_chain#Examples) under
 //! the name of `ProbabilityTable` to analyze the likehood of each characters
-//! to appears after the nths previous where n is variable. n can be consider
+//! to appears after the nths previous characters where n is variable. n can be consider
 //! as the accuracy
 //!
 //! This idea came from a
@@ -57,7 +57,7 @@ pub mod langs;
 /// This is a
 /// [Markov Chains](https://en.wikipedia.org/wiki/Markov_chain#Examples) under
 /// the name of `ProbabilityTable`. It represents the likehood of each
-/// characters of the language to appears after the nths previous where n is
+/// characters of the language to appears after the nths previous caracters where n is
 /// variable. n can be consider as the accuracy
 ///
 /// # Example
