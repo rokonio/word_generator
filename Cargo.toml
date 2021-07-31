@@ -3,6 +3,10 @@ name = "word_generator"
 version = "0.1.0"
 authors = ["Rokonio <naelkanada@gmail.com>"]
 edition = "2018"
+licence = "MIT"
+description = " Utilities for generating random words that souds similar to a choosen language"
+repository = "https://github.com/rokonio/word_generator"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

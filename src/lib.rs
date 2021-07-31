@@ -23,15 +23,17 @@
 //! use std::{fs::File, io::BufReader};
 //! use word_generator::{langs, *};
 //!
-//! let reader = BufReader::new(File::open("Your_lang.txt")?); // using your language
-//! let reader2 = BufReader::new(langs::fr_txt()); // or a preexisting language
+//! // let reader = BufReader::new(File::open("Your_lang.txt")?); // using your language
+//! let reader = BufReader::new(langs::fr_txt()); // or a preexisting language
 //!
 //! // This
 //! let table = ProbabilityTable::from_reader(reader, 3)?;
 //! println!("{:?}", table.generate_words(15)); // Generate 15 word
 //!
+//! # let reader = BufReader::new(langs::fr_txt());
+//!
 //! // Is the same as this
-//! println!("{:?}", generate_words(reader2, 3, 15)?);
+//! println!("{:?}", generate_words(reader, 3, 15)?);
 //! # Ok(())
 //! # }
 //! ```
@@ -72,10 +74,10 @@ pub mod langs;
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ProbabilityTable {
-    table: HashMap<String, HashMap<char, u32>>,
-    accuracy: usize,
+    pub(crate) table: HashMap<String, HashMap<char, u32>>,
+    pub(crate) accuracy: usize,
 }
 
 impl ProbabilityTable {
@@ -201,4 +203,38 @@ pub fn generate_words(
     );
     out.sort_by_key(|a| a.len());
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{self, BufReader};
+
+    #[test]
+    fn table_generate_words_works() -> io::Result<()> {
+        let reader = BufReader::new(langs::fr_txt());
+        let table = ProbabilityTable::from_reader(reader, 3)?;
+        assert_eq!(table.generate_words(15).len(), 15);
+        Ok(())
+    }
+
+    #[test]
+    fn table_consticency() -> io::Result<()> {
+        let reader = BufReader::new(langs::fr_txt());
+        let table = ProbabilityTable::from_reader(reader, 3)?;
+        for _ in 0..100 {
+            assert_eq!(
+                table
+                    .table
+                    .keys()
+                    .nth(random::<u8>().into())
+                    .unwrap()
+                    .chars()
+                    .collect::<Vec<char>>()
+                    .len(),
+                3
+            );
+        }
+        Ok(())
+    }
 }
