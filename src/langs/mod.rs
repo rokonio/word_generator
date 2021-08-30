@@ -3,6 +3,6 @@
 //! about the licence of each lists
 
 /// Every word of the french language with one word per line
-pub const fn fr_txt() -> &'static [u8] {
-    include_bytes!("FR.txt")
-}
+pub const FR_TXT: &'static [u8] = _FR_TXT;
+
+const _FR_TXT: &'static [u8] = include_bytes!("Fr.txt");

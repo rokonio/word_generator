@@ -24,13 +24,13 @@
 //! use word_generator::{langs, *};
 //!
 //! // let reader = BufReader::new(File::open("Your_lang.txt")?); // using your language
-//! let reader = BufReader::new(langs::fr_txt()); // or a preexisting language
+//! let reader = BufReader::new(langs::FR_TXT); // or a preexisting language
 //!
 //! // This
 //! let table = ProbabilityTable::from_reader(reader, 3)?;
 //! println!("{:?}", table.generate_words(15)); // Generate 15 word
 //!
-//! # let reader = BufReader::new(langs::fr_txt());
+//! # let reader = BufReader::new(langs::FR_TXT);
 //!
 //! // Is the same as this
 //! println!("{:?}", generate_words(reader, 3, 15)?);
@@ -67,7 +67,7 @@ pub mod langs;
 /// use std::io::BufReader;
 /// use word_generator::{langs, *};
 ///
-/// let reader = BufReader::new(langs::fr_txt());
+/// let reader = BufReader::new(langs::FR_TXT);
 ///
 /// let table = ProbabilityTable::from_reader(reader, 3)?;
 /// println!("{:?}", table.generate_words(15)); // Generate 15 word
@@ -94,7 +94,7 @@ impl ProbabilityTable {
     /// # Panic
     ///
     /// Panic if `accuracy` is less than one.
-    pub fn from_reader(reader: impl BufRead, accuracy: usize) -> io::Result<ProbabilityTable> {
+    pub fn from_reader<T: BufRead>(reader: T, accuracy: usize) -> io::Result<ProbabilityTable> {
         assert!(accuracy >= 1);
         Ok(generate_table(add_space(reader, accuracy)?, accuracy))
     }
@@ -108,7 +108,7 @@ impl ProbabilityTable {
     /// use std::io::BufReader;
     /// use word_generator::{langs, *};
     ///
-    /// let reader = BufReader::new(langs::fr_txt());
+    /// let reader = BufReader::new(langs::FR_TXT);
     ///
     /// let table = ProbabilityTable::from_reader(reader, 3)?;
     /// println!("{:?}", table.generate_words(15)); // Generate 15 word
@@ -121,13 +121,13 @@ impl ProbabilityTable {
 }
 
 // Replace each new line characters by a series of space of length
-fn add_space(reader: impl BufRead, accuracy: usize) -> io::Result<String> {
+fn add_space<T: BufRead>(reader: T, accuracy: usize) -> io::Result<String> {
     reader
         .lines()
         .map(|line| -> io::Result<String> {
-            Ok(format!("{}{}", " ".repeat(accuracy), line?.to_lowercase()))
+            Ok(format!("{:accuracy$}{}", " ", line?.to_lowercase(), accuracy=accuracy))
         })
-        .collect::<io::Result<String>>()
+        .collect()
 }
 
 // Generate a ProbabilityTable from the output of add_space
@@ -191,14 +191,14 @@ fn generate_multiple_words(matrix: &ProbabilityTable, number: u32) -> Vec<String
 /// use std::io::BufReader;
 /// use word_generator::{langs, *};
 ///
-/// let reader = BufReader::new(langs::fr_txt());
+/// let reader = BufReader::new(langs::FR_TXT);
 ///
 /// println!("{:?}", generate_words(reader, 3, 15)?);
 /// # Ok(())
 /// # }
 /// ```
-pub fn generate_words(
-    reader: impl BufRead,
+pub fn generate_words<T: BufRead>(
+    reader: T,
     accuracy: usize,
     amout: u32,
 ) -> io::Result<Vec<String>> {
@@ -217,7 +217,7 @@ mod tests {
 
     #[test]
     fn table_generate_words_works() -> io::Result<()> {
-        let reader = BufReader::new(langs::fr_txt());
+        let reader = BufReader::new(langs::FR_TXT);
         let table = ProbabilityTable::from_reader(reader, 3)?;
         assert_eq!(table.generate_words(15).len(), 15);
         Ok(())
@@ -225,7 +225,7 @@ mod tests {
 
     #[test]
     fn table_consticency() -> io::Result<()> {
-        let reader = BufReader::new(langs::fr_txt());
+        let reader = BufReader::new(langs::FR_TXT);
         let table = ProbabilityTable::from_reader(reader, 3)?;
         for _ in 0..100 {
             assert_eq!(
